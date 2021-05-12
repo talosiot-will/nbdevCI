@@ -1,0 +1,5 @@
+name: nbdevCI
+description: Run CI steps on an nbdev project. Access to private repos are managed using AWS secrets manager
+runs:
+  using: docker
+  image: Dockerfile
