@@ -6,11 +6,11 @@ DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
 function main() {
-    #get_keys
-    #install_library
-    #nbdev_read_nbs
-    #check_for_clean_nbs
-    #check_for_library_nb_diff
+    get_keys
+    install_library
+    nbdev_read_nbs
+    check_for_clean_nbs
+    check_for_library_nb_diff
     nbdev_test_nbs $nbdev_test_nbs_args
 }
 
