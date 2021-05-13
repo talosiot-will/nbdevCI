@@ -9,6 +9,7 @@ function main() {
     install_library
     nbdev_read_nbs
     check_for_clean_nbs
+    nbdev_test_nbs
 }
 
 function get_keys() {
