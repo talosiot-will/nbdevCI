@@ -6,36 +6,42 @@ DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
 function main () {
-    get_keys
-    install_library
+    private_pip_install_all
+    pip install .
     nbdev_read_nbs
     check_for_clean_nbs
     check_for_library_nb_diff
     nbdev_test_nbs $nbdev_test_nbs_args
 }
 
-function get_keys () {
-    which jq || (echo "Must have jq installed: sudo apt install -y jq" && false)
-    mkdir -p $DEPLOYKEYS
-    for key in $(grep '@git+ssh' settings.ini | sed -n -e 's/^.*\(@git+ssh:\/\/\)//p') ; do
-        fname=__deploykeys/$( basename $key ).key && echo $fname ;
+
+function private_pip_install ()
+{
+    which jq > /dev/null || (echo "Must have jq installed: sudo apt install -y jq" && false)
+
+    package=$1
+    key=$(echo $package | sed -n -e 's/^.*\(@git+ssh:\/\/\)//p')
+    fname=$DEPLOYKEYS/$( basename $key ).key
+    if [ ! -f $fname ]; then
         aws secretsmanager get-secret-value --secret-id $key | jq '.SecretString' | tr -d '"' | sed 's/\\n/\n/g' > $fname
-        chmod 600 $fname ;
-    done
+    fi
+    chmod 600 $fname
+
+    git_ssh="ssh -o StrictHostKeyChecking=no -i $fname"
+    GIT_SSH_COMMAND=$git_ssh pip install $package
 }
 
-function install_library () {
-    if ls $DEPLOYKEYS/*.key 1> /dev/null 2>&1;
-        then
-            mkdir -p ~/.ssh
-            eval `ssh-agent`
-            ssh-add $DEPLOYKEYS/*.key
-            ssh -o StrictHostKeyChecking=no -T git@github.com || true
-            #ssh into github with no stricthostkeychecking adds github.com to the known hosts
-            #but...
-            #ssh into github fails with an error code because github kicks you out
-        fi
-        pip install .
+function private_pip_install_all ()
+{
+    requirements_file="${1:-settings.ini}"
+    echo $requirements_file
+
+    mkdir -p $DEPLOYKEYS
+    for line in $(grep '@git+ssh' $requirements_file ) ; do
+        private_pip_install $line
+        echo $line
+    done
+    rm $DEPLOYKEYS/*.key && rmdir $DEPLOYKEYS
 }
 
 function check_for_clean_nbs () {
@@ -54,7 +60,6 @@ function check_for_library_nb_diff () {
 }
 
 
-
 help() {
     echo "Run CI steps for an nbdev project"
     echo "-f Run an individual function"
@@ -68,6 +73,5 @@ while getopts ":f:" arg; do
         *) help ;;
     esac
 done
-
 
 $FUNC
