@@ -1,8 +1,9 @@
 #!/usr/bin/env bash 
-set -e
+#set -e
 
 
 DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
+REQUIREMENTS_FILE="${INPUT_REQUIREMENTS_FILE:-settings.ini}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
 function main () {
@@ -19,6 +20,7 @@ function get_github_deploy_key ()
     which jq > /dev/null || (echo "Must have jq installed: sudo apt install -y jq" && false)
 
     package=$1
+    echo "🔑: "$package
     key=$(echo $package | sed -n -e 's/^.*\(@git+ssh:\/\/\)//p')
     fname=$DEPLOYKEYS/$( basename $key ).key
     aws secretsmanager get-secret-value --secret-id $key | jq '.SecretString' | tr -d '"' | sed 's/\\n/\n/g' > $fname
@@ -27,15 +29,13 @@ function get_github_deploy_key ()
 
 function get_github_deploy_keys ()
 {
-    requirements_file="${1:-settings.ini}"
-    echo $requirements_file
+    echo $REQUIREMENTS_FILE
 
     mkdir -p $DEPLOYKEYS
-    for line in $(grep '@git+ssh' $requirements_file ) ; do
-        get_github_deploy_keys $line
-        echo $line
+    packages=$(grep '@git+ssh' $REQUIREMENTS_FILE ) 
+    for line in $packages ; do
+        get_github_deploy_key $line
     done
-    rm $DEPLOYKEYS/*.key && rmdir $DEPLOYKEYS
 }
 
 function check_for_clean_nbs () {
