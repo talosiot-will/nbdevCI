@@ -6,8 +6,7 @@ DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
 function main () {
-    private_pip_install_all
-    pip install .
+    get_github_deploy_keys
     nbdev_read_nbs
     check_for_clean_nbs
     check_for_library_nb_diff
@@ -15,30 +14,25 @@ function main () {
 }
 
 
-function private_pip_install ()
+function get_github_deploy_key ()
 {
     which jq > /dev/null || (echo "Must have jq installed: sudo apt install -y jq" && false)
 
     package=$1
     key=$(echo $package | sed -n -e 's/^.*\(@git+ssh:\/\/\)//p')
     fname=$DEPLOYKEYS/$( basename $key ).key
-    if [ ! -f $fname ]; then
-        aws secretsmanager get-secret-value --secret-id $key | jq '.SecretString' | tr -d '"' | sed 's/\\n/\n/g' > $fname
-    fi
+    aws secretsmanager get-secret-value --secret-id $key | jq '.SecretString' | tr -d '"' | sed 's/\\n/\n/g' > $fname
     chmod 600 $fname
-
-    git_ssh="ssh -o StrictHostKeyChecking=no -i $fname"
-    GIT_SSH_COMMAND=$git_ssh pip install $package
 }
 
-function private_pip_install_all ()
+function get_github_deploy_keys ()
 {
     requirements_file="${1:-settings.ini}"
     echo $requirements_file
 
     mkdir -p $DEPLOYKEYS
     for line in $(grep '@git+ssh' $requirements_file ) ; do
-        private_pip_install $line
+        get_github_deploy_keys $line
         echo $line
     done
     rm $DEPLOYKEYS/*.key && rmdir $DEPLOYKEYS
