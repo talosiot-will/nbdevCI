@@ -6,9 +6,9 @@ DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
 REQUIREMENTS_FILE="${INPUT_REQUIREMENTS_FILE:-settings.ini}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
-function main () {
+function dockermain () {
     get_github_deploy_keys
-    GIT_SSH_COMMAND="github_ssh" pip install .
+    GIT_SSH_COMMAND="/github_ssh" pip install .
     nbdev_read_nbs
     check_for_clean_nbs
     check_for_library_nb_diff
@@ -61,7 +61,7 @@ help() {
     false
 }
 
-FUNC="main"
+FUNC="dockermain"
 while getopts ":f:" arg; do
     case $arg in
         f) FUNC=$OPTARG;;
