@@ -4,6 +4,7 @@ DEPLOYKEYS="${INPUT_DEPLOYKEYS:-__deploykeys}"
 lastarg=${!#}
 repo=$(echo "$lastarg" | sed -e "s/git-upload-pack '\(.*\)'/\1/")
 keyname=$(basename $repo).key || echo "Did not get a git-upload-pack command: "$lastarg
-
+#keypath=$(readlink -f $keyname)
+keypath=$DEPLOYKEYS/$keyname
 #match the correct key to the repo on the fly
-ssh -i $DEPLOYKEYS/$keyname -o StrictHostKeyChecking=no $@
+ssh -i $keypath -o StrictHostKeyChecking=no $@
