@@ -7,6 +7,7 @@ REQUIREMENTS_FILE="${INPUT_REQUIREMENTS_FILE:-settings.ini}"
 nbdev_test_nbs_args="${INPUT_NBDEV_TEST_NBS_ARGS}"
 
 function dockermain () {
+    pip install nbdev
     pip install .
     nbdev_read_nbs
     check_for_clean_nbs
