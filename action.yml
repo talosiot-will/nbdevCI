@@ -1,5 +1,48 @@
 name: nbdevCI
-description: Run CI steps on an nbdev project. Access to private repos are managed using AWS secrets manager
+description: Run CI steps on an nbdev project.
+inputs:
+    nbdev_test_nbs_args:
+        description: "Arguments to run with nbdev_test_nbs"
+        default: " "
+    key_github:
+        description: "Private key for github ssh access"
+        default: "NONE"
+
 runs:
-  using: docker
-  image: Dockerfile
+    #need checkout and setup python first
+    - name: Install SSH key
+      if: ${{ inputs.key_github }} != 'NONE'
+      uses: shimataro/ssh-key-action@v2.3.0
+      with:
+        key: ${{ secrets.KEY_GITHUB }}
+        name: github_actions
+        known_hosts: "|1|fYp42QmwYvgxeEflrhYNydeTiuo=|dA//p01ypTTLaNaYodiONRjAhmg= ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+        config: |
+            Host github.com
+                HostName github.com
+                User git
+                IdentityFile ~/.ssh/github_actions
+                StrictHostKeyChecking no
+    - name: Install the library
+      run: |
+        pip install .
+        pip install nbdev
+    - name: Read all notebooks
+      run: |
+        nbdev_read_nbs
+    - name: Check if all notebooks are cleaned
+      run: |
+        echo "Check we are starting with clean git checkout"
+        git status
+        if [ -n "$(git status -uno -s)" ]; then echo "git status is not clean"; false; fi
+        echo "Trying to strip out notebooks"
+        nbdev_clean_nbs
+        echo "Check that strip out was unnecessary"
+        git status -s # display the status to see which nbs need cleaning up
+        if [ -n "$(git status -uno -s)" ]; then echo -e "!!! Detected unstripped out notebooks\n!!!Remember to run nbdev_install_git_hooks"; false; fi
+    - name: Check if there is no diff library/notebooks
+      run: |
+        if [ -n "$(nbdev_diff_nbs)" ]; then echo -e "!!! Detected difference between the notebooks and the library"; echo "$(nbdev_diff_nbs)"; false; fi
+    - name: Run tests
+      run: |
+        nbdev_test_nbs ${{ inputs.nbdev_test_nbs_args }}

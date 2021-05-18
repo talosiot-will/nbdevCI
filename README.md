@@ -2,21 +2,10 @@
 > CI tools for nbdev projects
 
 ## Uses
-Use in a `.github/workflows` file.  There are a few different patterns you can use to invoke the script.
+Use in a `.github/workflows` file.
 
 
 No docker is used in testing
-
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: nbdev CI steps
-      uses: talosiot-will/nbdevCI@master
-```
-
 
 Docker is used in testing.  Because we don't support docker-in-docker we have to use the scripts directly.
 ```yaml
