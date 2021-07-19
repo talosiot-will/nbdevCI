@@ -1,9 +1,9 @@
 name: nbdevCI
 description: Run CI steps on an nbdev project.
 inputs:
-    nbdev_test_nbs_args:
-        description: "Arguments to run with nbdev_test_nbs"
-        default: " "
+    nbdev_test_cmd:
+        description: "Command to run to test nbs"
+        default: "nbdev_test_nbs"
 
 runs:
     using: "composite"
@@ -35,4 +35,4 @@ runs:
         - name: Run tests
           shell: bash
           run: |
-            nbdev_test_nbs ${{ inputs.nbdev_test_nbs_args }}
+            ${{ inputs.nbdev_test_cmd }}
